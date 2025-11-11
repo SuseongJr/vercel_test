@@ -1,6 +1,8 @@
 import Link from "next/link";
 import "./globals.css";
 import {Control} from "./Control";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 
 export const metadata = {
@@ -9,25 +11,15 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   let topics = [];
   let errorMessage = null;
-  let requestedUrl = null;
   try {
-    if (!baseUrl) {
-      throw new Error('NEXT_PUBLIC_API_URL 환경변수가 설정되지 않았습니다.');
-    }
-    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-    const url = new URL('topics', normalizedBase).toString();
-    requestedUrl = url;
-    const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) {
-      throw new Error(`토픽 조회 실패: ${resp.status} ${resp.statusText}`);
-    }
-    topics = await resp.json();
+    const dbPath = path.join(process.cwd(), 'db.json');
+    const file = await fs.readFile(dbPath, 'utf-8');
+    const db = JSON.parse(file);
+    topics = Array.isArray(db?.topics) ? db.topics : [];
   } catch (error) {
-    const baseMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-    errorMessage = requestedUrl ? `${baseMessage} (요청 URL: ${requestedUrl})` : baseMessage;
+    errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
   }
   return (
     <html>
