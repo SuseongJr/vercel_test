@@ -12,18 +12,22 @@ export default async function RootLayout({ children }) {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   let topics = [];
   let errorMessage = null;
+  let requestedUrl = null;
   try {
     if (!baseUrl) {
       throw new Error('NEXT_PUBLIC_API_URL 환경변수가 설정되지 않았습니다.');
     }
-    const url = new URL('topics', baseUrl).toString();
+    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    const url = new URL('topics', normalizedBase).toString();
+    requestedUrl = url;
     const resp = await fetch(url, { cache: 'no-store' });
     if (!resp.ok) {
       throw new Error(`토픽 조회 실패: ${resp.status} ${resp.statusText}`);
     }
     topics = await resp.json();
   } catch (error) {
-    errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+    const baseMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+    errorMessage = requestedUrl ? `${baseMessage} (요청 URL: ${requestedUrl})` : baseMessage;
   }
   return (
     <html>
